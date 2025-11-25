@@ -63,14 +63,14 @@ public class ServerChat implements ServerChatInterface {
             System.setProperty("java.rmi.server.hostname", ip);
 
             ServerChat servidor = new ServerChat();
-            ServerChatInterface stub = (ServerChat) UnicastRemoteObject.exportObject(servidor, 0);
+            ServerChatInterface stub = (ServerChatInterface) UnicastRemoteObject.exportObject(servidor, 0);
 
             Registry registry = LocateRegistry.createRegistry(1099);
             registry.rebind("ChatServidor", stub);
 
             System.out.println("╔════════════════════════════════════╗");
-            System.out.println("║   SERVIDOR DE CHAT INICIADO       ║");
-            System.out.println("║   IP: " + ip + "                  ║");
+            System.out.println("║   SERVIDOR DE CHAT INICIADO        ║");
+            System.out.println("║   IP: " + ip + "                   ║");
             System.out.println("║   Puerto: 1099                     ║");
             System.out.println("╚════════════════════════════════════╝");
 
