@@ -38,7 +38,8 @@ public class ServerChat implements ServerChatInterface {
 
     @Override
     public synchronized void enviarMensaje(String emisor, String mensaje) throws RemoteException {
-        System.out.println("[" + emisor + "]: " + mensaje);
+        // LOG EXPLÍCITO para verificar tráfico por el servidor
+        System.out.println(">>> [SERVER LOG] Mensaje Público recibido de [" + emisor + "]: " + mensaje);
 
         // Enviar el mensaje a todos los clientes conectados
         List<RemoteChat> clientesDesconectados = new ArrayList<>();
