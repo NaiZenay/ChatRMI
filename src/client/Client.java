@@ -8,12 +8,16 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.rmi.RemoteException;
 import java.net.InetAddress;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.Enumeration;
 
 public class Client {
     private final String name;
     private final String ip;
     private final int port;
+    private Registry registryLocal;
 
     public Client(String name, String ip, int port) {
         this.name = name;
@@ -33,6 +37,27 @@ public class Client {
         return port;
     }
 
+    public void crearRegistryLocal(RemoteChat chatInterface) {
+        try {
+            // Crear registry en puerto único para este cliente
+            registryLocal = LocateRegistry.createRegistry(port);
+
+            // Exportar el objeto del chat
+            RemoteChat stub = (RemoteChat) UnicastRemoteObject.exportObject(chatInterface, 0);
+
+            // Registrar en el registry local
+            registryLocal.rebind("ChatCliente_" + name, stub);
+
+            System.out.println("Cliente " + name + " escuchando en puerto " + port);
+
+        } catch (RemoteException e) {
+            JOptionPane.showMessageDialog(null,
+                    "Error creando registry local: " + e.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
     public static String obtenerIPLocal() {
         try {
             Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
@@ -40,7 +65,6 @@ public class Client {
             while (interfaces.hasMoreElements()) {
                 NetworkInterface interfaz = interfaces.nextElement();
 
-                // Saltar interfaces inactivas o loopback
                 if (interfaz.isLoopback() || !interfaz.isUp()) {
                     continue;
                 }
@@ -49,7 +73,6 @@ public class Client {
                 while (direcciones.hasMoreElements()) {
                     InetAddress addr = direcciones.nextElement();
 
-                    // Filtrar solo IPv4 y evitar loopback (127.0.0.1)
                     if (!addr.isLoopbackAddress() && addr.getHostAddress().indexOf(':') == -1) {
                         return addr.getHostAddress();
                     }
@@ -60,24 +83,49 @@ public class Client {
         }
 
         return "No se pudo obtener la IP";
-}
+    }
 
-
-public static void main(String[] args) {
+    public static void main(String[] args) {
         try {
-
-            Client client= new Client(InetAddress.getLocalHost().getHostName(),
-                    obtenerIPLocal(),5000);
-
-            System.out.println("client.Client info:\n" +
-                    client.name+"\n"+client.ip+"\n"+client.port
+            // Pedir puerto al usuario
+            String puertoStr = JOptionPane.showInputDialog(
+                    null,
+                    "Ingresa el puerto para tu cliente (ej: 5000, 5001, 5002):",
+                    "Puerto del Cliente",
+                    JOptionPane.QUESTION_MESSAGE
             );
+
+            if (puertoStr == null || puertoStr.trim().isEmpty()) {
+                JOptionPane.showMessageDialog(null, "Debes ingresar un puerto");
+                System.exit(0);
+                return;
+            }
+
+            int puerto = Integer.parseInt(puertoStr.trim());
+
+            Client client = new Client(
+                    InetAddress.getLocalHost().getHostName(),
+                    obtenerIPLocal(),
+                    puerto
+            );
+
+            System.out.println("Client info:\n" +
+                    "Nombre: " + client.name + "\n" +
+                    "IP: " + client.ip + "\n" +
+                    "Puerto: " + client.port
+            );
+
             Chat chat = new Chat(client);
-            SwingUtilities.invokeLater(()-> chat.setVisible(true));
-        }catch (RemoteException | UnknownHostException e){
+            SwingUtilities.invokeLater(() -> chat.setVisible(true));
+
+        } catch (RemoteException | UnknownHostException e) {
             JOptionPane.showMessageDialog(null,
-                    "Something went wrong\n"+e.getMessage(),
-                    "Error",JOptionPane.ERROR_MESSAGE);
+                    "Something went wrong\n" + e.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(null,
+                    "Puerto inválido",
+                    "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 }
